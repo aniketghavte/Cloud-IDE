@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap');
+
+.sidebar {
+  width: 250px;
+  height: 100%;
+  background-color: #252526;
+  color: #cccccc;
+  overflow-y: auto;
+  user-select: none;
+  font-family: 'Roboto', sans-serif;
+  transition: width 0.3s ease-in-out;
+}
+
+.collapsed {
+  width: 50px;
+}
+
+.sidebarHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.toggleButton:hover {
+  color: #ffffff;
+}
+
+.fileSystem {
+  padding: 10px 0;
+}
+
+.item {
+  cursor: pointer;
+}
+
+.itemContent {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  transition: background-color 0.2s ease;
+}
+
+.itemContent:hover {
+  background-color: #2a2d2e;
+}
+
+.selected {
+  background-color: #37373d;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
+  font-size: 14px;
+}
+
+.folderIcon {
+  color: #e8ab53;
+}
+
+.fileIcon {
+  color: #42a5f5;
+}
+
+.itemName {
+  font-size: 13px;
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.children {
+  margin-left: 16px;
+}
+
+.collapsed .title,
+.collapsed .itemName,
+.collapsed .children {
+  display: none;
+}
+
+.collapsed .icon {
+  margin-right: 0;
+}
+
+.collapsed .itemContent {
+  justify-content: center;
+}

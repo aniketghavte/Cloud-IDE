@@ -1,0 +1,54 @@
+.ideContainer {
+  display: flex;
+  height: 100vh;
+}
+
+.mainContent {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 0.3s ease-in-out;
+}
+
+.mainContent.expanded {
+  margin-left: -200px;
+}
+
+.folderStructure {
+  width: 250px;
+  background-color: #f0f0f0;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.editor {
+  flex: 1;
+  padding: 1rem;
+  background-color: #ffffff;
+  overflow-y: auto;
+}
+
+.terminal {
+  height: 200px;
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+/* Add some basic styling for the folder structure */
+.folderStructure ul {
+  list-style-type: none;
+  padding-left: 1rem;
+}
+
+.folderStructure li {
+  margin-bottom: 0.5rem;
+}
+
