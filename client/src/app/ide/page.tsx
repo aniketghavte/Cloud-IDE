@@ -1,25 +1,39 @@
 "use client"
 import React, { useState } from 'react'
-import styles from './IDE.module.css'
-import { Sidebar, TextEditor, Terminal } from '@/components/IDE'
+import Sidebar from '@/components/IDE/Sidebar'
+import TextEditor from '@/components/IDE/TextEditor'
+import Terminal from '@/components/IDE/Terminal'
 
-export default function IDEPage() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+const IDEPage = () => {
+  const [selectedFile, setSelectedFile] = useState<string | undefined>()
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   return (
-    <div className={styles.ideContainer}>
-      <Sidebar onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
-      <div className={`${styles.mainContent} ${isSidebarCollapsed ? styles.expanded : ''}`}>
-        <TextEditor
-          initialValue="const hello = 'world';"
-          language="typescript"
-          theme="vs-dark"
-          path="example.ts"
-          onChange={(value) => console.log('Content changed:', value)}
-          readOnly={false}
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100vh' 
+    }}>
+      <div style={{ 
+        display: 'flex', 
+        flex: 1, 
+        overflow: 'hidden' 
+      }}>
+        <Sidebar 
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onFileSelect={(path) => setSelectedFile(path)}
         />
-        <Terminal />
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div style={{
+            height: "70%"
+          }}>
+            <TextEditor path={selectedFile} />
+          </div>
+          <Terminal />
+        </div>
       </div>
     </div>
-  );
+  )
 }
+
+export default IDEPage

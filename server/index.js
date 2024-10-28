@@ -68,7 +68,6 @@ app.get("/", (req, res) =>{
         message: "Hello from server"
     })
 })
-
 async function generateFileTree(directory) {
     const tree = {}
 

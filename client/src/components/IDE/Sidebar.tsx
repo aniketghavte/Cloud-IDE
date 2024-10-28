@@ -1,56 +1,89 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import React, { useState, useEffect } from 'react';
 import { FaFolder, FaFolderOpen, FaFile, FaChevronRight, FaChevronDown, FaBars } from 'react-icons/fa';
 import styles from './Sidebar.module.css';
+import {socket} from '@/socket';
 
 interface FileSystemItem {
   id: string;
   name: string;
   type: 'file' | 'folder';
   children?: FileSystemItem[];
+  path: string;
 }
 
 interface SidebarProps {
   onToggle: () => void;
+  onFileSelect: (path: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onToggle }) => {
+const Sidebar: React.FC<SidebarProps> = ({ onToggle, onFileSelect }) => {
   const [fileSystem, setFileSystem] = useState<FileSystemItem[]>([]);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFileSystem();
+    // Listen for file system changes
+    socket.on('file:refresh', fetchFileSystem);
+    return () => {
+      socket.off('file:refresh', fetchFileSystem);
+    };
   }, []);
 
   const fetchFileSystem = async () => {
-    const mockFileSystem: FileSystemItem[] = [
-      {
-        id: '1',
-        name: 'src',
-        type: 'folder',
-        children: [
-          { id: '2', name: 'components', type: 'folder', children: [] },
-          { id: '3', name: 'utils', type: 'folder', children: [] },
-          { id: '4', name: 'App.tsx', type: 'file' },
-          { id: '5', name: 'index.tsx', type: 'file' },
-        ],
-      },
-      {
-        id: '6',
-        name: 'public',
-        type: 'folder',
-        children: [
-          { id: '7', name: 'index.html', type: 'file' },
-          { id: '8', name: 'favicon.ico', type: 'file' },
-        ],
-      },
-      { id: '9', name: 'package.json', type: 'file' },
-      { id: '10', name: 'tsconfig.json', type: 'file' },
-    ];
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/files`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch file system');
+      }
+      const result = await response.json();
+      
+      // Updated conversion function to handle null values
+      const convertToFileSystemItem = (
+        tree: Record<string, any>, 
+        parentPath: string = ''
+      ): FileSystemItem[] => {
+        return Object.entries(tree).map(([name, value], index) => {
+          const path = parentPath ? `${parentPath}/${name}` : name;
+          const id = `${index}-${path}`;
+          
+          // If value is null, it's a file
+          if (value === null) {
+            return {
+              id,
+              name,
+              type: 'file',
+              path
+            };
+          }
+          
+          // If value is an object, it's a folder
+          return {
+            id,
+            name,
+            type: 'folder',
+            path,
+            children: convertToFileSystemItem(value, path)
+          };
+        });
+      };
 
-    setFileSystem(mockFileSystem);
+      const convertedTree = convertToFileSystemItem(result.tree);
+      console.log('Converted tree:', convertedTree); // Debug log
+      setFileSystem(convertedTree);
+    } catch (error) {
+      console.error('Error fetching file system:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load file system');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFolder = (id: string, e: React.MouseEvent) => {
@@ -66,8 +99,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onToggle }) => {
     });
   };
 
-  const handleItemClick = (id: string) => {
-    setSelectedItem(id);
+  const handleItemClick = (item: FileSystemItem) => {
+    setSelectedItem(item.id);
+    if (item.type === 'file') {
+      onFileSelect(item.path);
+    }
   };
 
   const renderFileSystemItem = (item: FileSystemItem, depth: number = 0) => {
@@ -78,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onToggle }) => {
       <div key={item.id} className={styles.item} style={{ paddingLeft: `${depth * 16}px` }}>
         <div
           className={`${styles.itemContent} ${isSelected ? styles.selected : ''}`}
-          onClick={() => handleItemClick(item.id)}
+          onClick={() => handleItemClick(item)}
         >
           {item.type === 'folder' && (
             <div 
@@ -118,7 +154,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onToggle }) => {
         </button>
       </div>
       <div className={styles.fileSystem}>
-        {fileSystem.map((item) => renderFileSystemItem(item))}
+        {isLoading && <div className={styles.message}>Loading...</div>}
+        {error && <div className={styles.error}>{error}</div>}
+        {!isLoading && !error && fileSystem.length === 0 && (
+          <div className={styles.message}>No files found</div>
+        )}
+        {!isLoading && !error && fileSystem.map((item) => renderFileSystemItem(item))}
       </div>
     </div>
   );

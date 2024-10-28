@@ -3,27 +3,82 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { debounce } from 'lodash';
+import { socket } from '@/socket';
 
 interface TextEditorProps {
-  initialValue?: string;
-  language?: string;
-  theme?: 'vs-dark' | 'light';
   path?: string;
-  onChange?: (value: string | undefined) => void;
   readOnly?: boolean;
 }
 
 const TextEditor: React.FC<TextEditorProps> = ({
-  initialValue = '',
-  language = 'typescript',
-  theme = 'vs-dark',
   path,
-  onChange,
   readOnly = false,
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
-  const [editorValue, setEditorValue] = useState(initialValue);
+  const [content, setContent] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(true);
+
+  // Fetch file contents when path changes
+  const fetchFileContent = useCallback(async () => {
+    if (!path) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/files/content?path=${path}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch file content');
+      
+      const result = await response.json();
+      setContent(result.content);
+      setIsSaved(true);
+    } catch (error) {
+      console.error('Error fetching file content:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [path]);
+
+  useEffect(() => {
+    if (path) {
+      fetchFileContent();
+    } else {
+      setContent('');
+    }
+  }, [path, fetchFileContent]);
+
+  // Debounced save handler
+  const debouncedSave = useCallback(
+    debounce((newContent: string) => {
+      if (!path) return;
+      
+      socket.emit('file:change', {
+        path: path,
+        content: newContent,
+      });
+      setIsSaved(true);
+    }, 5000),
+    [path]
+  );
+
+  // Handle content changes
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined && value !== content) {
+      setIsSaved(false);
+      debouncedSave(value);
+    }
+  };
+
+  // Handle manual save (Ctrl+S)
+  const handleSave = () => {
+    const currentValue = editorRef.current?.getValue();
+    if (currentValue !== undefined) {
+      debouncedSave.flush();
+      debouncedSave(currentValue);
+    }
+  };
 
   // Handle editor mounting
   const handleEditorDidMount = (
@@ -33,7 +88,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
     editorRef.current = editor;
     monacoRef.current = monaco;
 
-    // Configure editor settings
     editor.updateOptions({
       minimap: { enabled: true },
       scrollBeyondLastLine: false,
@@ -53,30 +107,9 @@ const TextEditor: React.FC<TextEditorProps> = ({
       wordWrap: 'on',
     });
 
-    // Add custom keybindings
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       handleSave();
     });
-  };
-
-  // Debounced save handler
-  const debouncedSave = useCallback(
-    debounce((value: string) => {
-      onChange?.(value);
-    }, 500),
-    [onChange]
-  );
-
-  // Handle content changes
-  const handleEditorChange = (value: string | undefined) => {
-    setEditorValue(value ?? '');
-    debouncedSave(value ?? '');
-  };
-
-  // Handle manual save
-  const handleSave = () => {
-    const currentValue = editorRef.current?.getValue();
-    onChange?.(currentValue);
   };
 
   // Cleanup on unmount
@@ -86,25 +119,54 @@ const TextEditor: React.FC<TextEditorProps> = ({
     };
   }, [debouncedSave]);
 
-  // Update editor value when initialValue changes
-  useEffect(() => {
-    if (editorRef.current && initialValue !== editorValue) {
-      editorRef.current.setValue(initialValue);
+  // Get file language from path
+  const getFileLanguage = (filePath: string | undefined) => {
+    if (!filePath) return 'plaintext';
+    const ext = filePath.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'js':
+        return 'javascript';
+      case 'ts':
+        return 'typescript';
+      case 'jsx':
+        return 'javascript';
+      case 'tsx':
+        return 'typescript';
+      case 'css':
+        return 'css';
+      case 'html':
+        return 'html';
+      case 'json':
+        return 'json';
+      default:
+        return 'plaintext';
     }
-  }, [initialValue]);
+  };
 
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {path && (
+        <div style={{ 
+          position: 'absolute', 
+          top: 0, 
+          right: 10, 
+          padding: '5px', 
+          color: '#666',
+          zIndex: 1 
+        }}>
+          {path.replaceAll('/', ' > ')} {isSaved ? '(Saved)' : '(Unsaved)'}
+        </div>
+      )}
       <Editor
         height="100%"
-        defaultLanguage={language}
-        defaultValue={initialValue}
-        theme={theme}
+        language={getFileLanguage(path)}
+        value={content}
+        theme="vs-dark"
         path={path}
         onChange={handleEditorChange}
         onMount={handleEditorDidMount}
         options={{
-          readOnly,
+          readOnly: readOnly || isLoading,
           automaticLayout: true,
         }}
         loading={<div>Loading editor...</div>}
