@@ -63,6 +63,12 @@ app.get('/files/content', async (req, res) => {
 server.listen(9000, () => console.log(`🐳 Docker server running on port 9000`))
 
 
+app.get("/", (req, res) =>{
+    res.json({
+        message: "Hello from server"
+    })
+})
+
 async function generateFileTree(directory) {
     const tree = {}
 

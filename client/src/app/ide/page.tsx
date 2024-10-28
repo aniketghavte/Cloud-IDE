@@ -10,7 +10,14 @@ export default function IDEPage() {
     <div className={styles.ideContainer}>
       <Sidebar onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
       <div className={`${styles.mainContent} ${isSidebarCollapsed ? styles.expanded : ''}`}>
-        <TextEditor />
+        <TextEditor
+          initialValue="const hello = 'world';"
+          language="typescript"
+          theme="vs-dark"
+          path="example.ts"
+          onChange={(value) => console.log('Content changed:', value)}
+          readOnly={false}
+        />
         <Terminal />
       </div>
     </div>
