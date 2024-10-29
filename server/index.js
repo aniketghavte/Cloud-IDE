@@ -34,13 +34,32 @@ ptyProcess.onData(data => {
     io.emit('terminal:data', data)
 })
 
+// Sanitize file paths
+function sanitizePath(userPath) {
+  // Prevent directory traversal attacks
+  const normalizedPath = path.normalize(userPath).replace(/^(\.\.(\/|\\|$))+/, '');
+  return normalizedPath;
+}
+
 io.on('connection', (socket) => {
     console.log(`Socket connected`, socket.id)
 
     socket.emit('file:refresh')
 
     socket.on('file:change', async ({ path, content }) => {
-        await fs.writeFile(`./user${path}`, content)
+        try {
+            const sanitizedPath = sanitizePath(path);
+            const filePath = path.join('./user', sanitizedPath);
+
+            // Check if file path is within allowed directory
+            if (!filePath.startsWith(path.resolve('./user'))) {
+                throw new Error('Access denied');
+            }
+
+            await fs.writeFile(filePath, content);
+        } catch (error) {
+            console.error('Error writing file:', error);
+        }
     })
 
     socket.on('terminal:write', (data) => {
@@ -55,9 +74,20 @@ app.get('/files', async (req, res) => {
 })
 
 app.get('/files/content', async (req, res) => {
-    const path = req.query.path;
-    const content = await fs.readFile(`./user${path}`, 'utf-8')
-    return res.json({ content })
+    try {
+        const sanitizedPath = sanitizePath(req.query.path);
+        const filePath = path.join('./user', sanitizedPath);
+        
+        // Check if file exists and is within allowed directory
+        if (!filePath.startsWith(path.resolve('./user'))) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+        
+        const content = await fs.readFile(filePath, 'utf-8');
+        return res.json({ content });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to read file' });
+    }
 })
 
 server.listen(9000, () => console.log(`🐳 Docker server running on port 9000`))
@@ -68,6 +98,7 @@ app.get("/", (req, res) =>{
         message: "Hello from server"
     })
 })
+
 async function generateFileTree(directory) {
     const tree = {}
 

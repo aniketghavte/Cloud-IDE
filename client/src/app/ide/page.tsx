@@ -25,7 +25,7 @@ const IDEPage = () => {
         />
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <div style={{
-            height: "70%"
+            height: "55%"
           }}>
             <TextEditor path={selectedFile} />
           </div>
