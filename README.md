@@ -6,7 +6,8 @@ Welcome to **CloudIDE**, a cloud-based Integrated Development Environment (IDE) 
 
 Visit the live demo at: [cloudide.aniketghavte.xyz](https://cloudide.aniketghavte.xyz)
 
-![CloudIDE Demo]![image](https://github.com/user-attachments/assets/3c01d7b2-e88f-44fa-9104-26471837069e)
+![cloude_ide_zzz](https://github.com/user-attachments/assets/7ac7195f-b780-4f2f-ada9-c4098e940c6b)
+
 
 *CloudIDE in action showing the integrated terminal and code editor*
 
