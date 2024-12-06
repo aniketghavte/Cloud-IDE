@@ -1,5 +1,4 @@
-﻿# Cloud-IDE
-# CloudIDE
+# Building a Cloud Based Integrated Developement Environment
 
 Welcome to **CloudIDE**, a cloud-based Integrated Development Environment (IDE) built using Node.js, Docker, and AWS. This project aims to provide a seamless development experience with the power of cloud.
 ## Live Demo
